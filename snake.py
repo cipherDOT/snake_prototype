@@ -84,19 +84,19 @@ def main():
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP]:
-            cell.y -= rez
+#             cell.y -= rez
             cell.dirn = 'up'
 
         elif keys[pygame.K_DOWN]:
-            cell.y += rez
+#             cell.y += rez
             cell.dirn = 'down'
 
         elif keys[pygame.K_LEFT]:
-            cell.x -= rez
+#             cell.x -= rez
             cell.dirn = 'left'
 
         elif keys[pygame.K_RIGHT]:
-            cell.x += rez
+#             cell.x += rez
             cell.dirn = 'right'
 
         for i in range(1, width // rez):

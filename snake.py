@@ -1,3 +1,6 @@
+# Yaaaay.... 
+# I figured out some problems myself...
+# cheers...
 
 # ------------------------------------------------------------------------------------------------------------------------- #
 import pygame
@@ -110,6 +113,22 @@ def main():
             cell.x -= rez
         elif cell.dirn == 'right':
             cell.x += rez
+
+        if (cell.x > width - rez):
+            cell.x = 0
+            # score -= 1
+        
+        if (cell.y > height - rez):
+            cell.y = 0
+            # score -= 1
+
+        if cell.x < -1:
+            cell.x = width - rez
+            # score -= 1
+
+        if cell.y < -1:
+            cell.y = height - rez
+            # score -= 1
 
         if (cell.x == pi.x - (pi.x % rez) and cell.y == pi.y - (pi.y % rez)):
             score += 1

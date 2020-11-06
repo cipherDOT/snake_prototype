@@ -1,153 +1,152 @@
-# Yaaaay.... 
-# I figured out some problems myself...
-# cheers...
-
-# ------------------------------------------------------------------------------------------------------------------------- #
 import pygame
 import random
+from pygame.math import Vector2
 
 pygame.font.init()
 
-font = pygame.font.SysFont('comicsans', 40)
+FONT = pygame.font.SysFont('comicsans', 50)
 
-width = 600
-height = 400
-rez = 20
+cell_num = 20
+cell_size = 40
+score = 0
 
-display = pygame.display.set_mode((width, height))
+display = pygame.display.set_mode((cell_num * cell_size, cell_num * cell_size))
 pygame.display.set_caption('Snake')
 
 # ------------------------------------------------------------------------------------------------------------------------- #
 
-class Snake:
-    color = (255, 255, 255)
-    body = []
 
+class Fruit(object):
+    def __init__(self):
+        self.randomize()
 
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.dirn = self.body[0].dirn
+    def draw(self):
+        fruit_rect = pygame.Rect(
+            int(self.pos.x * cell_size), int(self.pos.y * cell_size), cell_size, cell_size)
+        pygame.draw.rect(display, (255, 70, 70), fruit_rect)
 
-        
-# ------------------------------------------------------------------------------------------------------------------------- #
-class Cell:
-    color = (255, 255, 255)
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.dirn = 'up'
-
-
-    def move_up(self, rez):
-        self.y -= rez
-
-    def move_down(self, rez):
-        self.y += rez
-
-    def move_left(self, rez):
-        self.x -= rez
-
-    def move_right(self, rez):
-        self.x += rez
+    def randomize(self):
+        self.x = random.randint(0, cell_num - 1)
+        self.y = random.randint(0, cell_num - 1)
+        self.pos = Vector2(self.x, self.y)
 
 # ------------------------------------------------------------------------------------------------------------------------- #
-class Food:
-    color = (255, 40, 70)
+
+
+class Snake(object):
+    def __init__(self):
+        self.body = [Vector2(7, 10), Vector2(8, 10), Vector2(9, 10)]
+        self.direction = Vector2(-1, 0)
+        self.new_block = False
+
+    def draw(self):
+        for block in self.body:
+            block_rect = pygame.Rect(
+                int(block.x * cell_size), int(block.y * cell_size), cell_size, cell_size)
+            pygame.draw.rect(display, (169, 169, 169), block_rect)
+
+    def move(self):
+        if self.new_block:
+            body_copy = self.body[:]
+            body_copy.insert(0, body_copy[0] + self.direction)
+            self.body = body_copy
+            self.new_block = False
+        else:
+            body_copy = self.body[:-1]
+            body_copy.insert(0, body_copy[0] + self.direction)
+            self.body = body_copy
+
+    def add_block(self):
+        self.new_block = True
+
+# ------------------------------------------------------------------------------------------------------------------------- #
+
+
+class Main(object):
 
     def __init__(self):
-        self.eaten = False
-        self.x = random.randint(20, width - 40)
-        self.y = random.randint(20, height - 40)
+        self.snake = Snake()
+        self.fruit = Fruit()
 
-    def change_pos(self):
-        self.eaten = False
-        self.x = random.randint(20, width - 40)
-        self.y = random.randint(20, height - 40)
+    def update(self):
+        self.snake.move()
+        self.collide()
+        self.end()
+
+    def draw(self):
+        self.snake.draw()
+        self.fruit.draw()
+
+    def collide(self):
+        global score
+        if self.fruit.pos == self.snake.body[0]:
+            self.fruit.randomize()
+            self.snake.add_block()
+            score += 1
+
+    def end(self):
+        if not 0 <= self.snake.body[0].x < cell_num or not 0 <= self.snake.body[0].y < cell_num:
+            self.game_over()
+
+        for block in self.snake.body[1:]:
+            if block == self.snake.body[0]:
+                self.game_over()
+
+    def game_over(self):
+        pygame.quit()
+        quit()
 
 # ------------------------------------------------------------------------------------------------------------------------- #
+
+
+def draw_grid(display):
+    for i in range(1, cell_num):
+        for j in range(1, cell_num):
+            pygame.draw.line(display, (255, 255, 255), (i * cell_size,
+                                                        0), (i * cell_size, cell_size * cell_num))
+            pygame.draw.line(display, (255, 255, 255), (0, j *
+                                                        cell_size), (cell_size * cell_num, j * cell_size))
+
+# ------------------------------------------------------------------------------------------------------------------------- #
+
+
 def main():
     run = True
-    cell = Cell(100, 100)
-    pi = Food()
-    score = 0
+    game = Main()
 
     clock = pygame.time.Clock()
+    SCREEN_UPDATE = pygame.USEREVENT
+    pygame.time.set_timer(SCREEN_UPDATE, 150)
 
     while run:
-        clock.tick(15)
+        display.fill((51, 51, 51))
+        clock.tick(30)
 
-        display.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
-        keys = pygame.key.get_pressed()
+            if event.type == SCREEN_UPDATE:
+                game.update()
 
-        if keys[pygame.K_UP]:
-            # cell.y -= rez
-            cell.dirn = 'up'
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and game.snake.direction != (0, 1):
+                    game.snake.direction = Vector2(0, -1)
+                elif event.key == pygame.K_DOWN and game.snake.direction != (0, -1):
+                    game.snake.direction = Vector2(0, 1)
+                elif event.key == pygame.K_RIGHT and game.snake.direction != (-1, 0):
+                    game.snake.direction = Vector2(1, 0)
+                elif event.key == pygame.K_LEFT and game.snake.direction != (1, 0):
+                    game.snake.direction = Vector2(-1, 0)
 
-        elif keys[pygame.K_DOWN]:
-            # cell.y += rez
-            cell.dirn = 'down'
+        game.draw()
+        score_text = FONT.render('Score: ' + str(score), 1, (255, 255, 255))
+        display.blit(score_text, (10, 10))
+        # snake.move()
+        draw_grid(display=display)
 
-        elif keys[pygame.K_LEFT]:
-            # cell.x -= rez
-            cell.dirn = 'left'
-
-        elif keys[pygame.K_RIGHT]:
-            # cell.x += rez
-            cell.dirn = 'right'
-
-        for i in range(1, width // rez):
-            pygame.draw.line(display, (169, 169, 169), (i*rez, 0), (i*rez, height))
-
-        for j in range(1, height // rez):
-            pygame.draw.line(display, (169, 169, 169), (0,  j*rez), (width, j*rez))
-
-        if cell.dirn == 'up':
-            cell.y -= rez
-        elif cell.dirn == 'down':
-            cell.y += rez
-        elif cell.dirn == 'left':
-            cell.x -= rez
-        elif cell.dirn == 'right':
-            cell.x += rez
-
-        if (cell.x > width - rez):
-            cell.x = 0
-            # score -= 1
-        
-        if (cell.y > height - rez):
-            cell.y = 0
-            # score -= 1
-
-        if cell.x < -1:
-            cell.x = width - rez
-            # score -= 1
-
-        if cell.y < -1:
-            cell.y = height - rez
-            # score -= 1
-
-        if (cell.x == pi.x - (pi.x % rez) and cell.y == pi.y - (pi.y % rez)):
-            score += 1
-            pi.eaten = True
-            pi.change_pos()
-
-        if not pi.eaten:
-            pygame.draw.rect(display, (255, 40, 70), (pi.x - (pi.x % rez), pi.y - (pi.y % rez), rez, rez))
-
-        
-        pygame.draw.rect(display, (255, 255, 255), (cell.x, cell.y, rez, rez))
-        text = font.render(str(score), 1, (255, 255, 255))
-        display.blit(text, (560, 10))
         pygame.display.flip()
 
-# ------------------------------------------------------------------------------------------------------------------------- #
 
 if __name__ == '__main__':
     main()
-

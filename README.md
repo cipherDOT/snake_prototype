@@ -1,4 +1,4 @@
 # snake_prototype
-a single cell game. Eat all the pi...
+classic Snake game in python
 
-I will definitely work on it and make it a full snake game.
+Using 2D vectors in pygame...

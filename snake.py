@@ -1,152 +1,150 @@
 import pygame
-import random
 from pygame.math import Vector2
+import time
+import random
 
 pygame.font.init()
 
-FONT = pygame.font.SysFont('comicsans', 50)
+width = 600
+height = 600
+rez = 30
+black = (0, 0, 0)
 
-cell_num = 20
-cell_size = 40
-score = 0
-
-display = pygame.display.set_mode((cell_num * cell_size, cell_num * cell_size))
+display = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Snake')
 
-# ------------------------------------------------------------------------------------------------------------------------- #
+font = pygame.font.SysFont("comicsans", 50)
 
-
-class Fruit(object):
-    def __init__(self):
-        self.randomize()
-
-    def draw(self):
-        fruit_rect = pygame.Rect(
-            int(self.pos.x * cell_size), int(self.pos.y * cell_size), cell_size, cell_size)
-        pygame.draw.rect(display, (255, 70, 70), fruit_rect)
-
-    def randomize(self):
-        self.x = random.randint(0, cell_num - 1)
-        self.y = random.randint(0, cell_num - 1)
-        self.pos = Vector2(self.x, self.y)
-
-# ------------------------------------------------------------------------------------------------------------------------- #
+# -------------------------------------------------------------------------------------------------------------------------#
 
 
 class Snake(object):
+
     def __init__(self):
-        self.body = [Vector2(7, 10), Vector2(8, 10), Vector2(9, 10)]
-        self.direction = Vector2(-1, 0)
-        self.new_block = False
+        self.body = [Vector2(7, 10), Vector2(6, 10), Vector2(5, 10)]
+        # self.body = [Vector2(0, 0)]
+        self.dirn = Vector2(0, -1)
+        self.head = self.body[0]
 
     def draw(self):
-        for block in self.body:
-            block_rect = pygame.Rect(
-                int(block.x * cell_size), int(block.y * cell_size), cell_size, cell_size)
-            pygame.draw.rect(display, (169, 169, 169), block_rect)
+        for cell in self.body:
+            pygame.draw.rect(display, (169, 169, 169), (int(
+                cell.x) * rez, int(cell.y) * rez, rez, rez))
 
     def move(self):
-        if self.new_block:
-            body_copy = self.body[:]
-            body_copy.insert(0, body_copy[0] + self.direction)
-            self.body = body_copy
-            self.new_block = False
-        else:
-            body_copy = self.body[:-1]
-            body_copy.insert(0, body_copy[0] + self.direction)
-            self.body = body_copy
+        nextx = self.body[0].x
+        nexty = self.body[0].y
+        self.body[0] += self.dirn
+        for cell in self.body[1:]:
+            # if self.body.index(cell) == 0:
+            #     pass
+            # else:
+            thisx = cell.x
+            thisy = cell.y
+            cell.x = nextx
+            cell.y = nexty
+            nextx = thisx
+            nexty = thisy
 
-    def add_block(self):
-        self.new_block = True
-
-# ------------------------------------------------------------------------------------------------------------------------- #
-
-
-class Main(object):
-
-    def __init__(self):
-        self.snake = Snake()
-        self.fruit = Fruit()
-
-    def update(self):
-        self.snake.move()
-        self.collide()
-        self.end()
-
-    def draw(self):
-        self.snake.draw()
-        self.fruit.draw()
-
-    def collide(self):
-        global score
-        if self.fruit.pos == self.snake.body[0]:
-            self.fruit.randomize()
-            self.snake.add_block()
-            score += 1
+    def grow(self):
+        self.body.append(Vector2(self.body[-1:][0].x, self.body[-1:][0].y))
 
     def end(self):
-        if not 0 <= self.snake.body[0].x < cell_num or not 0 <= self.snake.body[0].y < cell_num:
-            self.game_over()
+        if self.head in self.body[1:]:
+            return True
 
-        for block in self.snake.body[1:]:
-            if block == self.snake.body[0]:
-                self.game_over()
+        if self.head.x > width or self.head.x < 0 or self.head.y > height or self.head.y < 0:
+            return True
 
-    def game_over(self):
-        pygame.quit()
-        quit()
+    def set_dirn(self, x, y):
+        self.dirn = Vector2(x, y)
 
-# ------------------------------------------------------------------------------------------------------------------------- #
+# -------------------------------------------------------------------------------------------------------------------------#
 
 
-def draw_grid(display):
-    for i in range(1, cell_num):
-        for j in range(1, cell_num):
-            pygame.draw.line(display, (255, 255, 255), (i * cell_size,
-                                                        0), (i * cell_size, cell_size * cell_num))
-            pygame.draw.line(display, (255, 255, 255), (0, j *
-                                                        cell_size), (cell_size * cell_num, j * cell_size))
+class Food(object):
+    def __init__(self):
+        self.x = random.randint(0, width - rez)
+        self.y = random.randint(0, height - rez)
+        self.pos = Vector2(self.x - (self.x % rez), self.y - (self.y % rez))
 
-# ------------------------------------------------------------------------------------------------------------------------- #
+    def draw(self):
+        pygame.draw.rect(display, (255, 0, 70),
+                         (int(self.pos.x), int(self.pos.y), rez, rez))
+
+    def pick_new(self):
+        self.x = random.randint(0, width - rez)
+        self.y = random.randint(0, height - rez)
+        self.pos = Vector2(self.x - (self.x % rez), self.y - (self.y % rez))
+
+
+# -------------------------------------------------------------------------------------------------------------------------#
+
+
+def draw_grid():
+    for i in range(1, width // rez):
+        for j in range(1, height // rez):
+            pygame.draw.line(display, (255, 255, 255),
+                             (i * rez, 0), (i * rez, height))
+            pygame.draw.line(display, (255, 255, 255),
+                             (0, j * rez), (width, j * rez))
+
+# -------------------------------------------------------------------------------------------------------------------------#
 
 
 def main():
     run = True
-    game = Main()
-
+    snake = Snake()
+    food = Food()
+    score = 0
+    counter = 0
     clock = pygame.time.Clock()
-    SCREEN_UPDATE = pygame.USEREVENT
-    pygame.time.set_timer(SCREEN_UPDATE, 150)
 
     while run:
-        display.fill((51, 51, 51))
-        clock.tick(30)
-
+        clock.tick(5)
+        display.fill(black)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
-            if event.type == SCREEN_UPDATE:
-                game.update()
-
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and game.snake.direction != (0, 1):
-                    game.snake.direction = Vector2(0, -1)
-                elif event.key == pygame.K_DOWN and game.snake.direction != (0, -1):
-                    game.snake.direction = Vector2(0, 1)
-                elif event.key == pygame.K_RIGHT and game.snake.direction != (-1, 0):
-                    game.snake.direction = Vector2(1, 0)
-                elif event.key == pygame.K_LEFT and game.snake.direction != (1, 0):
-                    game.snake.direction = Vector2(-1, 0)
+                if event.key == pygame.K_UP:
+                    snake.set_dirn(0, -1)
+                elif event.key == pygame.K_DOWN:
+                    snake.set_dirn(0, 1)
+                elif event.key == pygame.K_LEFT:
+                    snake.set_dirn(-1, 0)
+                elif event.key == pygame.K_RIGHT:
+                    snake.set_dirn(1, 0)
 
-        game.draw()
-        score_text = FONT.render('Score: ' + str(score), 1, (255, 255, 255))
+        if (snake.head.x*rez == food.pos.x and snake.head.y*rez == food.pos.y):
+            food.pick_new()
+            snake.grow()
+            score += 1
+
+        if snake.end():
+            lost_text = font.render('You Lost!', 3, (255, 255, 255))
+            display.blit(lost_text, ((width // 2) - (lost_text.get_width() // 2), (height // 2) - (lost_text.get_height() // 2)))
+            counter += 1
+
+        if counter == 30:
+            time.sleep(2)
+            run = False
+
+        snake.move()
+        food.draw()
+        snake.draw()
+        score_text = font.render("Score: " + str(score), 1, (255, 255, 255))
         display.blit(score_text, (10, 10))
-        # snake.move()
-        draw_grid(display=display)
+        draw_grid()
 
         pygame.display.flip()
 
 
-if __name__ == '__main__':
+# -------------------------------------------------------------------------------------------------------------------------#
+
+
+if __name__ == "__main__":
     main()
+
+# -------------------------------------------------------------------------------------------------------------------------#

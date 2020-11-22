@@ -9,11 +9,13 @@ width = 600
 height = 600
 rez = 30
 black = (0, 0, 0)
+white = (255, 255, 255)
+framerate = 10
 
 display = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Snake')
 
-font = pygame.font.SysFont("comicsans", 50)
+font = pygame.font.SysFont("comicsans", 25)
 
 # -------------------------------------------------------------------------------------------------------------------------#
 
@@ -53,7 +55,7 @@ class Snake(object):
         if self.head in self.body[1:]:
             return True
 
-        if self.head.x > width or self.head.x < 0 or self.head.y > height or self.head.y < 0:
+        if self.head.x * rez > width or self.head.x < 0 or self.head.y * rez > height or self.head.y < 0:
             return True
 
     def set_dirn(self, x, y):
@@ -101,20 +103,20 @@ def main():
     clock = pygame.time.Clock()
 
     while run:
-        clock.tick(5)
+        clock.tick(framerate)
         display.fill(black)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
+                if event.key == pygame.K_UP and snake.dirn.y != 1:
                     snake.set_dirn(0, -1)
-                elif event.key == pygame.K_DOWN:
+                elif event.key == pygame.K_DOWN and snake.dirn.y != -1:
                     snake.set_dirn(0, 1)
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT and snake.dirn.x != 1:
                     snake.set_dirn(-1, 0)
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT and snake.dirn.x != -1:
                     snake.set_dirn(1, 0)
 
         if (snake.head.x*rez == food.pos.x and snake.head.y*rez == food.pos.y):
@@ -124,17 +126,18 @@ def main():
 
         if snake.end():
             lost_text = font.render('You Lost!', 3, (255, 255, 255))
-            display.blit(lost_text, ((width // 2) - (lost_text.get_width() // 2), (height // 2) - (lost_text.get_height() // 2)))
+            display.blit(lost_text, ((width // 2) - (lost_text.get_width() //
+                                                     2), (height // 2) - (lost_text.get_height() // 2)))
             counter += 1
 
-        if counter == 30:
+        if counter > 0:
             time.sleep(2)
             run = False
 
         snake.move()
         food.draw()
         snake.draw()
-        score_text = font.render("Score: " + str(score), 1, (255, 255, 255))
+        score_text = font.render(str(score), 1, (255, 255, 255))
         display.blit(score_text, (10, 10))
         draw_grid()
 
